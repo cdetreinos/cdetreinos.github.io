@@ -206,7 +206,7 @@ function renderDay(d){
   h += '<div class="remind"><b>Antes:</b> '+(day.tipo==='inf'?'alongamento e mobilidade de pernas':'alongamento e mobilidade de superior')+' (botão Alongamentos e mobilidade).</div>';
   day.exs.forEach((x,e)=>{
     h += '<div class="card" id="c'+d+'_'+e+'"><div class="top2"><a class="thumb" href="'+x.vid+'" target="_blank" rel="noopener" aria-label="Abrir vídeo: '+esc(x.nome)+'"><img src="'+x.img+'" alt="" loading="lazy"><span>▸ vídeo</span></a>'+
-     '<div class="info"><h3>'+esc(x.nome)+'</h3><div class="spec"><b>'+x.series+' séries</b> · '+x.reps+' reps<br>Descanso: <b>'+x.desc+'s</b></div>'+
+     '<div class="info"><h3>'+esc(x.nome)+'</h3><div class="spec"><b>'+x.series+' séries</b> · '+x.reps+(/[a-zA-Z]/.test(String(x.reps))?'':' reps')+'<br>Descanso: <b>'+x.desc+'s</b></div>'+
      (x.metodo ? (x.mlink ? '<a class="metodo" href="'+x.mlink+'" target="_blank" rel="noopener">Método '+esc(x.metodo)+' ▸ clique aqui</a>' : '<span class="metodo">Método '+esc(x.metodo)+'</span>') : '')+
      '</div><button class="fin" data-e="'+e+'" aria-pressed="false" aria-label="Concluir exercício: '+esc(x.nome)+'"><i>✓</i><span>Concluir</span></button></div>'+
      (x.nota?'<div class="nota">'+esc(x.nota)+'</div>':'')+
