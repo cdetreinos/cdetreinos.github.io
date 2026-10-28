@@ -265,13 +265,9 @@ function renderDay(d){
   });
   if(day.abd) h += '<div class="remind"><b>Abdômen hoje:</b> até 10 minutos — a sequência completa está no botão Vácuo e abdominais.</div>';
   h += '<div class="done-msg" id="dmsg">Treino concluído. Agora o cardio e pronto. 💪</div>';
-  const cl = dayState(d).closed;
-  if(cl){
-    const itens = day.exs.map((x,e)=>{ const v=getLoad(d,e); return v!=='' ? '<li>'+esc(x.nome)+': <b>'+esc(v)+' kg</b></li>' : ''; }).join('');
-    h += '<div class="closedbox"><b>Treino encerrado em '+esc(cl)+'.</b> Suas cargas ficaram registradas.'+(itens?'<ul>'+itens+'</ul>':'<br>')+'<button id="reopen">Reabrir treino</button></div>';
-  } else {
-    h += '<button class="endbtn" id="endb">Encerrar treino</button>';
-  }
+  const cl = dayState(d).last || dayState(d).closed;
+  if(cl) h += '<div class="closedbox"><b>Último treino encerrado em '+esc(cl)+'.</b> Suas cargas continuam registradas nos exercícios.</div>';
+  h += '<button class="endbtn" id="endb">Encerrar treino</button>';
   h += '<div class="cardio"><small>Cardio pós-treino</small><p>'+esc(day.cardio)+'</p></div>';
   h += '<div class="obs"><small>Observação geral deste treino</small>'+esc(day.obs)+'</div>';
   h += '<button class="reset" id="reset">Limpar cargas e marcações deste dia</button>';
@@ -316,13 +312,10 @@ function renderMain(){
   const eb=document.getElementById('endb');
   if(eb) eb.onclick=()=>{
     const falta=D.dias[d].exs.length-doneCount(d);
-    if(falta>0 && !confirm('Ainda faltam '+falta+' exercício(s) sem marcar como concluído. Encerrar o treino mesmo assim? As cargas ficam registradas.')) return;
-    const t=new Date(); dayState(d).closed=('0'+t.getDate()).slice(-2)+'/'+('0'+(t.getMonth()+1)).slice(-2);
+    if(falta>0 && !confirm('Ainda faltam '+falta+' exercício(s) sem marcar como concluído. Encerrar o treino mesmo assim? As cargas ficam registradas e as marcações verdes são limpas.')) return;
+    const t=new Date(); const ds=dayState(d); ds.last=('0'+t.getDate()).slice(-2)+'/'+('0'+(t.getMonth()+1)).slice(-2); delete ds.closed; ds.done={};
     save(); renderMain(); window.scrollTo({top:0});
   };
-  const ro=document.getElementById('reopen');
-  if(ro) ro.onclick=()=>{ delete dayState(d).closed; save(); renderMain(); };
-  if(dayState(d).closed) D.dias[d].exs.forEach((x,e)=>{ const c=document.getElementById('c'+d+'_'+e); if(c) c.classList.add('shut'); });
   document.getElementById('reset').onclick=()=>{ if(confirm('Apagar as cargas e marcações de '+D.dias[d].titulo+'?')){ delete state[d]; save(); renderMain(); } };
 }
 document.getElementById('obs').innerHTML = renderObs();
