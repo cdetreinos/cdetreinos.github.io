@@ -161,6 +161,20 @@ table.avtb{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fix
 table.avtb th,table.avtb td{padding:7px 3px;text-align:center;border-bottom:1px solid var(--line)}
 table.avtb th:first-child,table.avtb td:first-child{text-align:left;width:30%;color:var(--silver)}
 table.avtb .hl{background:rgba(200,16,46,.12)}
+
+.restrow{padding:0 12px 10px}
+.restbtn{width:100%;background:var(--card2);color:var(--silver);border:1px solid var(--red);border-radius:10px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer}
+.restbtn:active{transform:scale(.98)}
+.card.done .restrow{display:none}
+.restbar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:30;background:#111114;border-top:2px solid var(--red);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -6px 18px rgba(0,0,0,.6)}
+.restbar.on{display:flex}
+.restbar small{display:block;color:var(--mut);font-size:11.5px;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.restbar b{font-size:28px;font-weight:700;color:#fff;line-height:1.15}
+.restbar button{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:0;border-radius:10px;padding:12px 20px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.restbar.done{border-top-color:var(--ok);background:#0d1a13}
+.restbar.done b{color:#9fe3bd;font-size:20px}
+body.resting .wrap{padding-bottom:120px}
+
 </style>
 </head>
 <body>
@@ -265,6 +279,32 @@ function renderDieta(){
   h += '<p class="small" style="margin-top:12px">Quantidades arredondadas para facilitar a medida em casa. O PDF da sua dieta chega separado.</p>';
   return h;
 }
+
+/* ===== Cronometro de descanso (botao "Iniciar descanso" em cada exercicio) ===== */
+function restSec(v){ if(typeof v==='number') return v>0?v:0; const s=String(v||'').toLowerCase(); if(/sem\s*desc/.test(s)) return 0; const m=s.match(/(\d+)/); if(!m) return 0; let n=+m[1]; if(/min/.test(s)) n*=60; return n; }
+const fmtT = s => Math.floor(s/60)+':'+('0'+(s%60)).slice(-2);
+const rest = {end:0,id:0,nome:'',ctx:null,lock:null,fired:false};
+function restBeep(){
+  try{ const c=rest.ctx; if(c){ [0,0.3,0.6].forEach(t=>{ const o=c.createOscillator(), g=c.createGain(), T=c.currentTime+t; o.type='square'; o.frequency.value=1800; o.connect(g); g.connect(c.destination); g.gain.setValueAtTime(0.0001,T); g.gain.exponentialRampToValueAtTime(0.3,T+0.01); g.gain.exponentialRampToValueAtTime(0.0001,T+0.22); o.start(T); o.stop(T+0.24); }); } }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate([300,120,300,120,300]); }catch(e){}
+}
+function restLockOff(){ try{ if(rest.lock) rest.lock.release(); }catch(e){} rest.lock=null; }
+function restTick(){
+  const left=Math.max(0,Math.ceil((rest.end-Date.now())/1000)), el=document.getElementById('restbar');
+  if(left>0){ el.className='restbar on'; document.getElementById('rs1').textContent='Descanso · '+rest.nome; document.getElementById('rs2').textContent=fmtT(left); document.getElementById('restx').textContent='Parar'; }
+  else{ clearInterval(rest.id); el.className='restbar on done'; document.getElementById('rs1').textContent=rest.nome; document.getElementById('rs2').textContent='Acabou! Próxima série'; document.getElementById('restx').textContent='Ok'; if(!rest.fired){ rest.fired=true; restBeep(); restLockOff(); } }
+}
+function restStop(){ clearInterval(rest.id); restLockOff(); const el=document.getElementById('restbar'); el.className='restbar'; document.body.classList.remove('resting'); }
+function startRest(sec,nome){
+  try{ const AC=window.AudioContext||window.webkitAudioContext; if(AC){ rest.ctx=rest.ctx||new AC(); if(rest.ctx.state==='suspended') rest.ctx.resume(); } }catch(e){}
+  clearInterval(rest.id); rest.nome=nome; rest.end=Date.now()+sec*1000; rest.fired=false;
+  try{ if(navigator.wakeLock && !rest.lock) navigator.wakeLock.request('screen').then(l=>{ rest.lock=l; l.addEventListener('release',()=>{ rest.lock=null; }); }).catch(()=>{}); }catch(e){}
+  document.body.classList.add('resting'); restTick(); rest.id=setInterval(restTick,250);
+}
+(function(){ const el=document.createElement('div'); el.id='restbar'; el.className='restbar'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite');
+  el.innerHTML='<div><small id="rs1"></small><b id="rs2"></b></div><button id="restx" type="button"></button>'; document.body.appendChild(el); document.getElementById('restx').onclick=restStop; })();
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && document.body.classList.contains('resting') && rest.end){ restTick(); if(!rest.fired && rest.end>Date.now()){ try{ if(navigator.wakeLock && !rest.lock) navigator.wakeLock.request('screen').then(l=>{ rest.lock=l; }).catch(()=>{}); }catch(e){} } } });
+
 function renderDay(d){
   const day = D.dias[d];
   let h = '<div class="dayhead"><h1>'+esc(day.titulo)+' · '+esc(day.sub)+'</h1><p>'+esc(day.foco)+'</p></div>';
@@ -281,6 +321,7 @@ function renderDay(d){
      (x.metodo ? (x.mlink ? '<a class="metodo" href="'+x.mlink+'" target="_blank" rel="noopener">Método '+esc(x.metodo)+' ▸ clique aqui</a>' : '<span class="metodo">Método '+esc(x.metodo)+'</span>') : '')+
      '</div><button class="fin" data-e="'+e+'" aria-pressed="false" aria-label="Concluir exercício: '+esc(x.nome)+'"><i>✓</i><span>Concluir</span></button></div>'+
      (x.nota?'<div class="nota">'+esc(x.nota)+'</div>':'')+
+     (restSec(x.desc)>0?'<div class="restrow"><button class="restbtn" type="button" data-e="'+e+'">⏱ Iniciar descanso · '+fmtT(restSec(x.desc))+'</button></div>':'')+
      '<div class="loadrow"><label for="L'+d+'_'+e+'">Maior carga hoje (kg)</label>'+
      '<input id="L'+d+'_'+e+'" type="number" inputmode="decimal" min="0" step="0.5" placeholder="kg" value="'+esc(getLoad(d,e))+'" data-e="'+e+'"></div>'+
      '</div>';
@@ -397,6 +438,7 @@ function renderMain(){
   const d=view;
   m.innerHTML=renderDay(d); updateProg(d);
   m.querySelectorAll('input[data-e]').forEach(i=>i.oninput=()=>putLoad(d,+i.dataset.e,i.value));
+  m.querySelectorAll('button.restbtn').forEach(b=>b.onclick=()=>{ const x=D.dias[d].exs[+b.dataset.e]; startRest(restSec(x.desc),x.nome); });
   m.querySelectorAll('button.fin').forEach(b=>b.onclick=()=>{
     const e=+b.dataset.e, ds=dayState(d), on=!ds.done[e];
     if(on) ds.done[e]=true; else delete ds.done[e];
