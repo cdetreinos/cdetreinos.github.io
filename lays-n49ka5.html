@@ -395,7 +395,7 @@ function renderAval(){
  h+='<div class="avleg"><span><i style="background:#f2c316"></i>Gordura</span><span><i style="background:#b3202c"></i>Músculo</span></div>';
  if(A.msgs&&A.msgs[avB])h+='<div class="avmsg"><small>Mensagem do Lucas · '+esc(b.n)+'</small>'+esc(A.msgs[avB])+'</div>';
  const fem=A.sexo==='F';
- const rows=[['Peso (kg)','w',1],['% gordura','fat',1],['Massa magra (kg)','lean',0],[fem?'Busto (cm)':'Tórax (cm)','chest',fem?1:0],['Cintura (cm)','waist',1],['Abdômen (cm)','abdo',1],['Quadril (cm)','hip',1],['Braço (cm)','arm',fem?1:0],['Coxa (cm)','thigh',fem?1:0],['Panturrilha (cm)','calf',0]];
+ const rows=[['Peso (kg)','w',1],['% gordura','fat',1],['Massa magra (kg)','lean',0],[fem?'Busto (cm)':'Tórax (cm)','chest',fem?1:0],['Cintura (cm)','waist',1],['Abdômen (cm)','abdo',1],['Quadril (cm)','hip',0],['Braço (cm)','arm',fem?1:0],['Coxa (cm)','thigh',0],['Panturrilha (cm)','calf',0]];
  const val=(c,k)=>k==='lean'?(c.fat==null?null:Math.round(lean(c)*10)/10):c[k];
  const disp=(c,k)=>{if(val(c,k)==null)return '–';if(k==='lean'||k==='w'||k==='fat')return (k==='fat'?til:'')+val(c,k);return avv(c,k)};
  const shown=rows.filter(r=>cy.some(c=>val(c,r[1])!=null)).map(r=>cy.some(c=>c[r[1]+'E']!=null)?[r[0].replace(' (cm)',' D / E (cm)'),r[1],r[2]]:r);
